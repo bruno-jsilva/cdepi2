@@ -1,0 +1,6 @@
+dados/*.csv
+dados/*.zip
+dados/*.rar
+dados/*.xlsx
+R/library/
+docs/*.html

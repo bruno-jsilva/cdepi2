@@ -1,0 +1,111 @@
+---
+title: "Hipertensão arterial no VIGITEL, 2006-2024"
+author: "Bruno Silva"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+    toc_depth: 2
+    theme: cerulean
+---
+
+```{r setup, include=FALSE}
+.libPaths(c("../R/library", .libPaths()))
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+# Introdução
+
+Este relatório apresenta uma análise exploratória dos relatos de hipertensão arterial no VIGITEL entre 2006 e 2024.
+
+# Objetivo
+
+Descrever a evolução dos relatos de hipertensão arterial ao longo dos anos e comparar os relatos entre homens e mulheres.
+
+# Pacotes
+
+```{r pacotes, echo=TRUE}
+library(readr)
+library(dplyr)
+library(highcharter)
+library(dygraphs)
+library(xts)
+library(tidyr)
+```
+
+# Dados
+
+```{r dados}
+hipertensao_ano <- read_csv("../resultados/hipertensao_ano.csv", show_col_types = FALSE)
+
+hipertensao_ano_sexo <- read_csv("../resultados/hipertensao_ano_sexo.csv", show_col_types = FALSE)
+```
+
+Os dados foram preparados a partir da base `vigitel-2006-2024-peso-rake.csv`. Foram utilizadas as variáveis de ano, sexo, relato de hipertensão arterial e peso amostral.
+
+# Relatos de hipertensão ao longo dos anos
+
+```{r grafico-highcharter}
+dados_grafico1 <- hipertensao_ano |>
+  mutate(data = as.Date(paste0(ano, "-01-01")))
+
+highchart() |>
+  hc_add_series(
+    data = dados_grafico1,
+    type = "line",
+    hcaes(x = data, y = relatos_hipertensao),
+    name = "Relatos de hipertensão",
+    color = "#800020"
+  ) |>
+  hc_title(text = "Relatos de hipertensão arterial no VIGITEL, 2006-2024") |>
+  hc_subtitle(text = "Contagem não ponderada de entrevistados que relataram hipertensão") |>
+  hc_xAxis(
+    type = "datetime",
+    title = list(text = "Ano")
+  ) |>
+  hc_yAxis(
+    title = list(text = "Número de relatos")
+  ) |>
+  hc_tooltip(
+    pointFormat = "Relatos: <b>{point.y}</b><br>Ano: {point.x:%Y}"
+  ) |>
+  hc_exporting(enabled = TRUE) |>
+  hc_add_theme(hc_theme_flat())
+```
+
+# Relatos de hipertensão por sexo
+
+```{r grafico-dygraphs}
+dados_grafico2 <- hipertensao_ano_sexo |>
+  select(ano, sexo, relatos_hipertensao) |>
+  pivot_wider(
+    names_from = sexo,
+    values_from = relatos_hipertensao
+  ) |>
+  arrange(ano)
+
+serie <- xts(
+  dados_grafico2 |> select(-ano),
+  order.by = as.Date(paste0(dados_grafico2$ano, "-01-01"))
+)
+
+dygraph(serie, main = "Relatos de hipertensão arterial por sexo, 2006-2024") |>
+  dySeries("Homens", label = "Homens") |>
+  dySeries("Mulheres", label = "Mulheres") |>
+  dyOptions(stackedGraph = FALSE) |>
+  dyAxis("y", label = "Número de relatos") |>
+  dyRangeSelector(height = 20)
+```
+
+# Considerações finais
+
+Entre 2006 e 2019, observa-se uma tendência geral de aumento no número de relatos de hipertensão arterial no VIGITEL. A partir de 2020, ocorre uma queda acentuada no total de relatos, coincidindo com o período da pandemia de Covid-19. Essa redução pode estar relacionada ao distanciamento social, à redução do acesso aos serviços de saúde e à possível diminuição de diagnósticos ou relatos no período.
+
+A análise por sexo mostra que, em todos os anos avaliados, o número de relatos de hipertensão arterial foi maior entre mulheres do que entre homens. 
